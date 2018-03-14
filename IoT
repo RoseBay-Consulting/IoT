@@ -1,59 +1,57 @@
 pragma solidity ^0.4.19;
 contract Iot{
     event TransferLog(address, address, uint256);
+  
     //address of the owner who have account on bank and control by client side 
-    address public owneraddess ;
+    address public owneraddress ;
     address public vaultaddress; 
-     modifier onlySuperUser(address _from, address _to){
-     assert(_from == owneraddess);
+    modifier onlySuperUser(address _from, address _to){
+     assert(_from == owneraddress);
      assert(_to == vaultaddress);
      _;
-     }
+    }
     mapping( 
         address =>uint256
-        ) public balanceOf;
-        
-    function IoT(address _vaultaddress) {
-         owneraddess = msg.sender;
-        balanceOf[msg.sender] = 10;
-        vaultaddress = _vaultaddress;
-    }
+        ) public currentholdingsof;
    
+        //to send ether fuction must be called expicitly other wise revert
+    function IoT(address _vaultaddress)public {
+         owneraddress = msg.sender;
+         vaultaddress = _vaultaddress;
+        currentholdingsof[owneraddress] = 10;
+    }
+    
     function _transfer(address _from, address _to, uint _value) internal {
-        // Prevent transfer to 0x0 address. Use burn() instead
         require(_to != 0x0);
         // Check if the sender has enough
-        require(balanceOf[_from] >= _value);
+        require(currentholdingsof[_from] >= _value);
         // Check for overflows
-        require(balanceOf[_to] + _value > balanceOf[_to]);
+        require(currentholdingsof[_to] + _value > currentholdingsof[_to]);
         // Save this for an assertion in the future
-        uint previousBalances = balanceOf[_from] + balanceOf[_to];
+        uint previousBalances = currentholdingsof[_from] + currentholdingsof[_to];
         // Subtract from the sender
-        balanceOf[_from] -= _value;
+        currentholdingsof[_from] -= _value;
         // Add the same to the recipient
-        balanceOf[_to] += _value;
+        currentholdingsof[_to] += _value;
         
         // Asserts are used to use static analysis to find bugs in your code. They should never fail
-        assert(balanceOf[_from] + balanceOf[_to] == previousBalances);
+        assert(currentholdingsof[_from] + currentholdingsof[_to] == previousBalances);
     }
 
-  function unlock(address _from, uint _value, address _to )public onlySuperUser(_from , _to)returns(bool){
-    if(balanceOf[_from]>=10){
-    _transfer(_from,_to,_value);
-    TransferLog(_from, _to, _value);
+  function unlock(uint _value)public onlySuperUser(msg.sender, vaultaddress)returns(bool){
+    if(currentholdingsof[msg.sender] >= 10){
+    _transfer(msg.sender, vaultaddress, _value);
+    emit TransferLog(msg.sender, vaultaddress, _value);
     return true;
     }
     else return false;
   }
   
-  /** @param _from is for the vault adddress 
-   * @param _to is for the owner address
-   * so in order to reuse the code _to and _from is swaped for modifier
-  */
-  function lock(address _from,uint _value, address _to)public onlySuperUser(_to, _from) returns(bool){
-    if(balanceOf[_from]>=10){
-     _transfer(_from,_to,_value);
-     TransferLog(_from, _to, _value);
+  
+  function lock( uint _value)public onlySuperUser(msg.sender, vaultaddress) returns(bool){
+    if(currentholdingsof[vaultaddress] >= 10){
+     _transfer(vaultaddress, msg.sender, _value);
+     emit TransferLog(vaultaddress, msg.sender, _value);
      return true;
       }
     else return false;
