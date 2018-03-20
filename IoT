@@ -1,26 +1,39 @@
 pragma solidity ^0.4.19;
 contract Iot{
-    event TransferLog(address, address, uint256);
+    event TransferLog(uint256);
   
     //address of the owner who have account on bank and control by client side 
+    address public lawyeraddress;
+    address public sonaddress;
+    
     address public owneraddress ;
-    address public vaultaddress; 
+    address public vaultaddress;
+    
     modifier onlySuperUser(address _from, address _to){
-     assert(_from == owneraddress);
+     assert((_from == owneraddress) || (_from == sonaddress ) || (_from ==lawyeraddress));
      assert(_to == vaultaddress);
      _;
     }
+    
     mapping( 
         address =>uint256
         ) public currentholdingsof;
    
         //to send ether fuction must be called expicitly other wise revert
     function IoT(address _vaultaddress)public {
+         lawyeraddress = 0x055650C2dEE3392aEb73D80cCd0B169C10D379f7;
+         sonaddress = 0xf861131c1F106CeBE2ED690001AC0D3957d087cf;
          owneraddress = msg.sender;
          vaultaddress = _vaultaddress;
-        currentholdingsof[owneraddress] = 10;
+         valueRefactor();
     }
     
+    function valueRefactor()internal{
+        currentholdingsof[lawyeraddress] = 10;
+        currentholdingsof[sonaddress] = 10;
+        currentholdingsof[owneraddress]=20;
+        currentholdingsof[vaultaddress]=0;        
+    }
     function _transfer(address _from, address _to, uint _value) internal {
         require(_to != 0x0);
         // Check if the sender has enough
@@ -38,20 +51,24 @@ contract Iot{
         assert(currentholdingsof[_from] + currentholdingsof[_to] == previousBalances);
     }
 
-  function unlock(uint _value)public onlySuperUser(msg.sender, vaultaddress)returns(bool){
+  function unlock()public onlySuperUser(msg.sender, vaultaddress)returns(bool){
     if(currentholdingsof[msg.sender] >= 10){
-    _transfer(msg.sender, vaultaddress, _value);
-    emit TransferLog(msg.sender, vaultaddress, _value);
+    _transfer(msg.sender, vaultaddress, currentholdingsof[msg.sender]);
+        
+        if(currentholdingsof[vaultaddress]>=20){
+        emit TransferLog(currentholdingsof[vaultaddress]);
+        }
     return true;
     }
     else return false;
   }
   
   
-  function lock( uint _value)public onlySuperUser(msg.sender, vaultaddress) returns(bool){
-    if(currentholdingsof[vaultaddress] >= 10){
-     _transfer(vaultaddress, msg.sender, _value);
-     emit TransferLog(vaultaddress, msg.sender, _value);
+  function lock()public onlySuperUser(msg.sender, vaultaddress) returns(bool){
+    if(currentholdingsof[vaultaddress] >= 20){
+    valueRefactor();
+    emit TransferLog(currentholdingsof[vaultaddress]);
+    valueRefactor();
      return true;
       }
     else return false;
