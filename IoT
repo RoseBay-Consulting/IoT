@@ -1,13 +1,14 @@
 pragma solidity ^0.4.19;
+
 contract Iot{
+    
     event TransferLog(uint256);
   
     //address of the owner who have account on bank and control by client side 
-    address public lawyeraddress;
-    address public sonaddress;
-    
     address public owneraddress ;
     address public vaultaddress;
+    address public sonaddress;
+    address public lawyeraddress;
     
     modifier onlySuperUser(address _from, address _to){
      assert((_from == owneraddress) || (_from == sonaddress ) || (_from ==lawyeraddress));
@@ -20,21 +21,26 @@ contract Iot{
         ) public currentholdingsof;
    
         //to send ether fuction must be called expicitly other wise revert
-    function IoT(address _vaultaddress)public {
-         lawyeraddress = 0x055650C2dEE3392aEb73D80cCd0B169C10D379f7;
-         sonaddress = 0xf861131c1F106CeBE2ED690001AC0D3957d087cf;
-         owneraddress = msg.sender;
-         vaultaddress = _vaultaddress;
+    function IoT(address _owneraddress, address _vaultaddress, address _sonaddress, address _lawyeraddress)public {
+         //owneraddress  0x56f57303f5dc0a6e2742b771550ff820317dc294 
+         owneraddress = _owneraddress;
+         //vault address =0x37546aee36bce92481de95440dc28227dc96e961 
+         vaultaddress = _vaultaddress; 
+         //sonaddress = 0xc270255662f545419bf8126c0a91f35cdacdffd1 
+         sonaddress = _sonaddress;
+        // lawyeraddress = 0x28b81022b0608945c9f2b1a21990b008a13c34c3 
+         lawyeraddress = _lawyeraddress;
          valueRefactor();
     }
     
-    function valueRefactor()internal{
+    function valueRefactor()public{
         currentholdingsof[lawyeraddress] = 10;
         currentholdingsof[sonaddress] = 10;
         currentholdingsof[owneraddress]=20;
         currentholdingsof[vaultaddress]=0;        
     }
-    function _transfer(address _from, address _to, uint _value) internal {
+    
+        function _transfer(address _from, address _to, uint _value) internal {
         require(_to != 0x0);
         // Check if the sender has enough
         require(currentholdingsof[_from] >= _value);
@@ -47,13 +53,20 @@ contract Iot{
         // Add the same to the recipient
         currentholdingsof[_to] += _value;
         
-        // Asserts are used to use static analysis to find bugs in your code. They should never fail
+        // Asserts are used to use static analysis to find bugs in our code. They should never fail
         assert(currentholdingsof[_from] + currentholdingsof[_to] == previousBalances);
     }
 
   function unlock()public onlySuperUser(msg.sender, vaultaddress)returns(bool){
     if(currentholdingsof[msg.sender] >= 10){
-    _transfer(msg.sender, vaultaddress, currentholdingsof[msg.sender]);
+        //this specify that owner is not involved in unlocked state and if yes then it is alrady unlocked state 
+        assert(!(currentholdingsof[owneraddress]==0));
+        //if any one is involved in unlock the system then there current holdings must be zero.
+        // this also specify that both may be involved in the unlock system
+        
+        assert(!((currentholdingsof[sonaddress] == 0) && (currentholdingsof[lawyeraddress] == 0)));
+        //lets transfer now
+        _transfer(msg.sender, vaultaddress, currentholdingsof[msg.sender]);
         
         if(currentholdingsof[vaultaddress]>=20){
         emit TransferLog(currentholdingsof[vaultaddress]);
@@ -63,13 +76,11 @@ contract Iot{
     else return false;
   }
   
-  
   function lock()public onlySuperUser(msg.sender, vaultaddress) returns(bool){
     if(currentholdingsof[vaultaddress] >= 20){
-    valueRefactor();
     emit TransferLog(currentholdingsof[vaultaddress]);
     valueRefactor();
-     return true;
+    return true;
       }
     else return false;
   }
