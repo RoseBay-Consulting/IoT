@@ -64,7 +64,7 @@ contract Iot{
         //if any one is involved in unlock the system then there current holdings must be zero.
         // this also specify that both may be involved in the unlock system
         
-        assert(!((currentholdingsof[sonaddress] == 0) && (currentholdingsof[lawyeraddress] == 0)));
+        assert(((currentholdingsof[sonaddress] != 0) || (currentholdingsof[lawyeraddress] != 0)));
         //lets transfer now
         _transfer(msg.sender, vaultaddress, currentholdingsof[msg.sender]);
         
